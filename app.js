@@ -1,4 +1,3 @@
-const Employee = require("./lib/Employee");
 const Manager = require("./lib/Manager");
 const Engineer = require("./lib/Engineer");
 const Intern = require("./lib/Intern");
@@ -16,7 +15,7 @@ const render = require("./lib/htmlRenderer");
 
 // Initial inquirer process to gather information about the development team members
 
-const employees = []
+const employees = [];
 
 // will create the questions array
 const questions = [
