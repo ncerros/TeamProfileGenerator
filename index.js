@@ -12,37 +12,36 @@ const outputPath = path.join(OUTPUT_DIR, "team.html");
 
 const render = require("./lib/htmlRenderer");
 
-
-// Initial inquirer process to gather information about the development team members
-
+// / Initial inquirer process to gather information about the development team members
 const employees = [];
 
 // will create the questions array
 const questions = [
     {
         type: 'list',
-        message: 'Tell me what type of employee you are!',
+        message: 'What type of employee are you?',
         choices: ['Manager', 'Intern', 'Engineer'],
         name: 'role',
     },
     {
-        message: 'Tell me your name?',
+        message: 'What is your name?',
         name: 'name'
     },
     {
-        message: 'Tell me your employee ID?',
+        message: 'What is your employee ID?',
         name: 'id'
     },
     {
-        message: 'Tell me your email?',
+        message: 'What is your email?',
         name: 'email'
     }
 ]
-//Inquirer, if statement, fs, will start quiestioning in order to write to file 
+
+//Inquirer, if statement, fs, will start quiestioning in order to write to file
 const init = async () => {
     const { newEmployee } = await inquirer.prompt({
         type: 'confirm',
-        message: 'Do you want add this team member?',
+        message: 'Do you like to add this team member?',
         name: 'newEmployee'
     })
 
@@ -62,7 +61,8 @@ const init = async () => {
         }
     }
 }
-// This function will reapeat by calling init and make the initial process by calling the 
+
+/// This function will reapeat by calling init and make the initial process by calling the 
 // employee function 
 const initEmployee = async () => {
     const { role, name, id, email } = await inquirer.prompt(questions);
@@ -96,5 +96,6 @@ const initEmployee = async () => {
             console.log("No Default")
     }
 }
- 
+
+//by calling init the app will run
 init();
