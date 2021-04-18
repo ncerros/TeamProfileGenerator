@@ -1,101 +1,125 @@
 const Manager = require("./lib/Manager");
 const Engineer = require("./lib/Engineer");
 const Intern = require("./lib/Intern");
+const eventtime = require("./lib/eventtime");
 
 const inquirer = require("inquirer");
-const path = require("path");
+const util = require('util');
 const fs = require("fs");
 
+const readFile = util.promisify(fs.readFile);
+const writeFile = util.promisify(fs.writeFile);
 
-const OUTPUT_DIR = path.resolve(__dirname, "output");
-const outputPath = path.join(OUTPUT_DIR, "team.html");
-
-const render = require("./lib/renderhtml");
-
-// / Initial inquirer process to gather information about the development team members
-const employees = [];
-
-// will create the questions array
-const questions = [
-    {
-        type: 'list',
-        message: 'What type of employee are you?',
-        choices: ['Manager', 'Intern', 'Engineer'],
-        name: 'role',
+const validate = {
+    required: input => input !== '' ? true : "Please this field is required.",
+    name: input => input !== '' ? true : "Enter a name.",
+    id: input => Number.isInteger(Number(input)) && Number(input) > 0 ? true : "Type only positive whole number.",
+    email: input => input.match(/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+\@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/gi) ? true : "Enter a valid email address."
+}
+// Initial inquirer process to gather information about the development team members
+// will create the questions
+const questions = {
+    type: function() {
+        return {
+            message: "What team member would you like to add?",
+            type: "list",
+            name: "member",
+            choices: ["Engineer", "Intern", "I don't want to add more team members"]
+        }
     },
-    {
-        message: 'What is your name?',
-        name: 'name'
-    },
-    {
-        message: 'What is your employee ID?',
-        name: 'id'
-    },
-    {
-        message: 'What is your email?',
-        name: 'email'
-    }
-]
-
-//Inquirer, if statement, fs, will start quiestioning in order to write to file
-const init = async () => {
-    const { newEmployee } = await inquirer.prompt({
-        type: 'confirm',
-        message: 'Do you like to add this team member?',
-        name: 'newEmployee'
-    })
-
-    if (newEmployee) {
-        initEmployee();
-    } else {
-        if (employees.length > 0) {
-            if (fs.existsSync(OUTPUT_DIR)) {
-                return fs.writeFileSync(outputPath, render(employees), )
-            } else {
-                return fs.mkdir(OUTPUT_DIR, err => {
-                    if(err) throw err;
-    
-                    return fs.writeFileSync(outputPath, render(employees))
-                })
-            }
+    item: function(member, variable, item = variable, validate) {
+        return {
+            message: `What is your ${member.toLowerCase()}'s ${item}?`,
+            type: "input",
+            name: variable,
+            validate: validate
         }
     }
-}
+};
 
-/// This function will reapeat by calling init and make the initial process by calling the 
-// employee function 
-const initEmployee = async () => {
-    const { role, name, id, email } = await inquirer.prompt(questions);
+let employees = [];
 
-    switch (role) {
-        case 'Manager':
-            const { officeNumber } = await inquirer.prompt({
-                message: 'Office Number?',
-                name: 'officeNumber'
-            })
-            employees.push(new Manager(name, id, email, officeNumber))
-            init()
+async function addRole(member) {
+    let { name } = await inquirer.prompt(questions.item(member, "name", "full name", validate.name));
+    let { id } = await inquirer.prompt(questions.item(member, "id", "ID number", validate.id));
+    let { email } = await inquirer.prompt(questions.item(member, "email", "email address", validate.email));
+    switch (member) {
+        case "Manager":
+            let { officeNumber } = await inquirer.prompt(questions.item(member, "officeNumber", "office phone number", validate.required));
+            employees.push(new Manager(name, id, email, officeNumber));
             break;
-        case 'Intern':
-            const { school } = await inquirer.prompt({
-                message: 'School?',
-                name: 'school'
-            })
-            employees.push(new Intern(name, id, email, school))
-            init()
+        case "Engineer":
+            let { github } = await inquirer.prompt(questions.item(member, "github", "GitHub username", validate.required));
+            employees.push(new Engineer(name, id, email, github));
             break;
-        case 'Engineer':
-            const { github } = await inquirer.prompt({
-                message: 'GitHub?',
-                name: 'github'
-            })
-            employees.push(new Engineer(name, id, email, github))
-            init()
+        case "Intern":
+            let { school } = await inquirer.prompt(questions.item(member, "school", "school", validate.required));
+            employees.push(new Intern(name, id, email, school));
             break;
-        default:
-            console.log("No Default")
     }
 }
 
-//by calling init the app will run
+function getHTMLModule(file) {
+    return readFile(file, "utf8");
+}
+
+async function generateHTML() {
+    let Template = {
+        Main: await getHTMLModule("./templates/main.html"),
+        Manager: await getHTMLModule("./templates/manager.html"),
+        Engineer: await getHTMLModule("./templates/engineer.html"),
+        Intern: await getHTMLModule("./templates/intern.html")
+    }
+
+    let employeesHTML = "";
+
+    for (let employee of employees) {
+        let html = Template[employee.constructor.name]
+        .replace(/{% name %}/gi, employee.name)
+        .replace(/{% id %}/gi, employee.id)
+        .replace(/{% email %}/gi, employee.email);
+        switch (employee.constructor.name) {
+            case "Manager":
+                html = html.replace(/{% officeNumber %}/gi, employee.officeNumber);
+                break;
+            case "Engineer":
+                html = html.replace(/{% github %}/gi, employee.github);
+                break;
+            case "Intern":
+                html = html.replace(/{% school %}/gi, employee.school);
+                break;
+        }
+        employeesHTML += html;
+    }
+    let completeHTML = Template["Main"].replace(/{% employees %}/gi, employeesHTML);
+
+    createHTML(completeHTML);
+}
+
+async function createHTML(html) {
+    console.log("Success! Creating HTML...");
+    let file = `team-${eventtime()}.html`;
+    let dir = "./output";
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+    }
+    await writeFile(`${dir}/${file}`, html);
+    console.log(`HTML has successfully been created to "${dir}/${file}".`);
+    return;
+}
+
+async function init() {
+    console.log("Do you want to build your team?");
+    await addRole("Manager");
+    let member = "";
+    let exit = "I don't want to add more team members";
+    while (member != exit) {
+        let { member } = await inquirer.prompt(questions.type());
+        if (member === exit) {
+            return generateHTML();
+        }
+        await addRole(member);
+    }
+}
+
 init();
