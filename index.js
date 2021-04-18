@@ -1,11 +1,10 @@
+const inquirer = require("inquirer");
+const util = require('util');
+const fs = require("fs");
 const Manager = require("./lib/Manager");
 const Engineer = require("./lib/Engineer");
 const Intern = require("./lib/Intern");
 const eventtime = require("./lib/eventtime");
-
-const inquirer = require("inquirer");
-const util = require('util');
-const fs = require("fs");
 
 const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
