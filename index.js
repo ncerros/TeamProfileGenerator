@@ -10,7 +10,7 @@ const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
 
 const validate = {
-    required: input => input !== '' ? true : "Please this field is required.",
+    required: input => input !== '' ? true : "Field  required.",
     name: input => input !== '' ? true : "Enter a name.",
     id: input => Number.isInteger(Number(input)) && Number(input) > 0 ? true : "Type only positive whole number.",
     email: input => input.match(/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+\@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/gi) ? true : "Enter a valid email address."
